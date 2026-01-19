@@ -1,134 +1,68 @@
-// Variables globales
-let scene, camera, renderer, controls;
-let cube;
+// Script para agregar hotspots dinámicamente
+const modelViewer = document.querySelector('model-viewer');
+const addHotspotBtn = document.getElementById('addHotspotMode');
+let addHotspotMode = false;
+let hotspotCounter = 4; // Comienza después de los 3 hotspots existentes
 
-// Inicializar la escena
-function init() {
-    // Ocultar mensaje de carga
-    setTimeout(() => {
-        document.getElementById('loading').style.display = 'none';
-    }, 1000);
+// Alternar modo de agregar hotspot
+addHotspotBtn.addEventListener('click', () => {
+    addHotspotMode = !addHotspotMode;
+    addHotspotBtn.classList.toggle('active');
+    addHotspotBtn.textContent = addHotspotMode ? '❌ Cancelar' : '➕ Modo Agregar Hotspot';
+    modelViewer.style.cursor = addHotspotMode ? 'crosshair' : 'grab';
+});
 
-    // Crear escena
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a2e);
-
-    // Configurar cámara
-    camera = new THREE.PerspectiveCamera(
-        75,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-    );
-    camera.position.z = 5;
-
-    // Configurar renderer
-    const canvas = document.getElementById('canvas3d');
-    renderer = new THREE.WebGLRenderer({ 
-        canvas: canvas,
-        antialias: true 
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-
-    // Añadir controles de órbita
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 1;
-
-    // Crear geometría de ejemplo (cubo con colores)
-    const geometry = new THREE.BoxGeometry(2, 2, 2);
-    const materials = [
-        new THREE.MeshStandardMaterial({ color: 0xff6b6b }),
-        new THREE.MeshStandardMaterial({ color: 0x4ecdc4 }),
-        new THREE.MeshStandardMaterial({ color: 0xffe66d }),
-        new THREE.MeshStandardMaterial({ color: 0x95e1d3 }),
-        new THREE.MeshStandardMaterial({ color: 0xf38181 }),
-        new THREE.MeshStandardMaterial({ color: 0xaa96da })
-    ];
-    cube = new THREE.Mesh(geometry, materials);
-    scene.add(cube);
-
-    // Añadir iluminación
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 5, 5);
-    scene.add(directionalLight);
-
-    const pointLight = new THREE.PointLight(0xffffff, 0.5);
-    pointLight.position.set(-5, -5, 5);
-    scene.add(pointLight);
-
-    // Manejar resize de ventana
-    window.addEventListener('resize', onWindowResize, false);
-
-    // Iniciar animación
-    animate();
-}
-
-// Función de animación
-function animate() {
-    requestAnimationFrame(animate);
-
-    // Rotar el cubo ligeramente
-    cube.rotation.x += 0.005;
-    cube.rotation.y += 0.005;
-
-    // Actualizar controles
-    controls.update();
-
-    // Renderizar escena
-    renderer.render(scene, camera);
-}
-
-// Manejar resize de ventana
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-// Función para cargar modelo 3D personalizado (GLB/GLTF)
-function loadCustomModel(modelPath) {
-    const loader = new THREE.GLTFLoader();
+// Agregar hotspot al hacer click en el modelo
+modelViewer.addEventListener('click', (event) => {
+    if (!addHotspotMode) return;
     
-    loader.load(
-        modelPath,
-        function (gltf) {
-            // Remover cubo de ejemplo
-            scene.remove(cube);
-            
-            // Añadir modelo cargado
-            const model = gltf.scene;
-            scene.add(model);
-            
-            // Centrar y escalar modelo
-            const box = new THREE.Box3().setFromObject(model);
-            const center = box.getCenter(new THREE.Vector3());
-            model.position.sub(center);
-            
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 3 / maxDim;
-            model.scale.multiplyScalar(scale);
-            
-            console.log('Modelo cargado exitosamente');
-        },
-        function (xhr) {
-            console.log((xhr.loaded / xhr.total * 100) + '% cargado');
-        },
-        function (error) {
-            console.error('Error al cargar el modelo:', error);
-        }
-    );
-}
+    const hit = modelViewer.positionAndNormalFromPoint(event.clientX, event.clientY);
+    
+    if (hit) {
+        const position = `${hit.position.x}m ${hit.position.y}m ${hit.position.z}m`;
+        const normal = `${hit.normal.x}m ${hit.normal.y}m ${hit.normal.z}m`;
+        
+        // Crear nuevo hotspot
+        const hotspot = document.createElement('button');
+        hotspot.className = 'Hotspot';
+        hotspot.slot = `hotspot-${hotspotCounter}`;
+        hotspot.dataset.position = position;
+        hotspot.dataset.normal = normal;
+        hotspot.dataset.visibilityAttribute = 'visible';
+        
+        const annotation = document.createElement('div');
+        annotation.className = 'HotspotAnnotation';
+        annotation.textContent = `Punto ${hotspotCounter}`;
+        
+        hotspot.appendChild(annotation);
+        modelViewer.appendChild(hotspot);
+        
+        // Mostrar código en consola
+        console.log(`
+Hotspot ${hotspotCounter} creado:
+<button 
+  class="Hotspot" 
+  slot="hotspot-${hotspotCounter}" 
+  data-position="${position}" 
+  data-normal="${normal}"
+  data-visibility-attribute="visible">
+  <div class="HotspotAnnotation">Punto ${hotspotCounter}</div>
+</button>
+        `);
+        
+        hotspotCounter++;
+        
+        // Mensaje al usuario
+        alert(`Hotspot creado en:\nPosición: ${position}\nNormal: ${normal}\n\nRevisa la consola para copiar el código HTML.`);
+    }
+});
 
-// Iniciar cuando el DOM esté listo
-window.addEventListener('DOMContentLoaded', init);
-
-// Para cargar tu modelo 3D, descomenta y ajusta la ruta:
-// loadCustomModel('models/tu-modelo.glb');
+// Mostrar coordenadas al pasar el mouse (útil para ajustar posiciones)
+modelViewer.addEventListener('mousemove', (event) => {
+    if (!addHotspotMode) return;
+    
+    const hit = modelViewer.positionAndNormalFromPoint(event.clientX, event.clientY);
+    if (hit) {
+        modelViewer.title = `Pos: (${hit.position.x.toFixed(2)}, ${hit.position.y.toFixed(2)}, ${hit.position.z.toFixed(2)})`;
+    }
+});

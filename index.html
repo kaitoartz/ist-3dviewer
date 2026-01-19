@@ -7,21 +7,57 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="container">
-        <div id="loading">Cargando visor 3D...</div>
-        <canvas id="canvas3d"></canvas>
-    </div>
-    
+    <!-- Model Viewer Component -->
+    <model-viewer
+      src="models/scene.gltf"
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      camera-controls
+      tone-mapping="neutral"
+      shadow-intensity="1"
+      camera-orbit="0deg 75deg 3m"
+      field-of-view="45deg"
+      style="--progress-bar-color:#667eea; --progress-bar-height:8px"
+    >
+      <div id="loading" slot="poster">Cargando modelo 3D...</div>
+      
+      <!-- Hotspots - Ajusta las posiciones según tu modelo -->
+      <button 
+        class="Hotspot" 
+        slot="hotspot-1" 
+        data-position="1m 0.5m 0m" 
+        data-normal="1m 0m 0m"
+        data-visibility-attribute="visible">
+        <div class="HotspotAnnotation">Punto 1</div>
+      </button>
+      
+      <button 
+        class="Hotspot" 
+        slot="hotspot-2" 
+        data-position="0m 10m 1m" 
+        data-normal="0m 1m 0m"
+        data-visibility-attribute="visible">
+        <div class="HotspotAnnotation">Punto 2</div>
+      </button>
+      
+      <button 
+        class="Hotspot" 
+        slot="hotspot-3" 
+        data-position="-1m 0.5m 0m" 
+        data-normal="-1m 0m 0m"
+        data-visibility-attribute="visible">
+        <div class="HotspotAnnotation">Punto 3</div>
+      </button>
+    </model-viewer>
+
     <div id="controls">
         <h3>Controles</h3>
         <p>🖱️ Click y arrastra para rotar</p>
         <p>🔄 Scroll para zoom</p>
+        <p>📍 Click en hotspots para info</p>
     </div>
 
-    <!-- Three.js desde CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="js/main.js"></script>
+    <!-- Loads <model-viewer> for browsers -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 </body>
 </html>
